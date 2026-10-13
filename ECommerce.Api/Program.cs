@@ -1,6 +1,6 @@
 
 using Microsoft.OpenApi;
-
+ using ECommerce.Infrastructure;
 namespace ECommerce.Api
 {
     public class Program
@@ -12,6 +12,7 @@ namespace ECommerce.Api
             // Add services to the container.
 
             builder.Services.AddControllers();
+            builder.Services.AddInfrastructure(builder.Configuration);
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();

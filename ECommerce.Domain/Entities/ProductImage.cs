@@ -10,7 +10,7 @@ namespace ECommerce.Domain.Entities
     {
         public string Url { get; set; } = null!;
         public bool IsMain { get; set; }
-        public Product Product { get; set; } = new();
+        public Product Product { get; set; } = null!;
         public int ProductId { get; set; }
     }
 }
