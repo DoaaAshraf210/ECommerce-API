@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using ECommerce.Application.Interfaces.Repositories;
+using ECommerce.Infrastructure.Repositories;
 namespace ECommerce.Infrastructure
 {
     public static class DependencyInjection
@@ -14,6 +16,19 @@ namespace ECommerce.Infrastructure
         {
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+
+
+            services.AddScoped(typeof(IGenericRepository<>),typeof(GenericRepository<>));
+            services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<ICategoryRepository, CategoryRepository>();
+            services.AddScoped<IBrandRepository, BrandRepository>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+
+
+
+
+
 
             return services;
         }

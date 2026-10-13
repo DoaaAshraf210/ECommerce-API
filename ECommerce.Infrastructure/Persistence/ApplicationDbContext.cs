@@ -7,7 +7,7 @@ using System.Text;
 
 namespace ECommerce.Infrastructure.Persistence
 {
-    internal class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : DbContext
     {
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
