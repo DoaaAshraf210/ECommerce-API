@@ -24,9 +24,7 @@ namespace ECommerce.Infrastructure.Repositories
             Brands = brands;
         }
 
-        public void Dispose()
-       => _context.Dispose();
-
+    
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
       => _context.SaveChangesAsync(cancellationToken);
     }

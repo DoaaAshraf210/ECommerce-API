@@ -7,5 +7,7 @@ namespace ECommerce.Application.Interfaces.Repositories
 {
     public interface IBrandRepository: IGenericRepository<Brand>
     {
+        Task<bool> NameExistsAsync(string name, int? excludeId = null);
+
     }
 }

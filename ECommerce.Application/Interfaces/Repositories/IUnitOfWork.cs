@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ECommerce.Application.Interfaces.Repositories
 {
-    public interface IUnitOfWork: IDisposable
+    public interface IUnitOfWork
     {
         IProductRepository Products { get; }
         ICategoryRepository Categories { get; }
