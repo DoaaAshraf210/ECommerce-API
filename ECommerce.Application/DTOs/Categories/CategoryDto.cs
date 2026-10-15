@@ -1,3 +1,5 @@
-﻿public record CategoryDto(int Id, string Name, string? Description, string? ImageUrl);
+﻿namespace ECommerce.Application.DTOs.Categories;
+public record CategoryDto(int Id, string Name, string? Description, string? ImageUrl);
+
 public record CreateCategoryDto(string Name, string? Description, string? ImageUrl);
 public record UpdateCategoryDto(string Name, string? Description, string? ImageUrl);

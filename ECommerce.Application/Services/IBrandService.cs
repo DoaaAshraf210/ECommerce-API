@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-
+using ECommerce.Application.DTOs.Brands;
 namespace ECommerce.Application.Services
 {
     public interface IBrandService

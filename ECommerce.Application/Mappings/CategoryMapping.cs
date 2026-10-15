@@ -1,8 +1,9 @@
-﻿using ECommerce.Application.DTOs.Products;
-using ECommerce.Domain.Entities;
+﻿using ECommerce.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using ECommerce.Application.DTOs.Categories;
+
 
 namespace ECommerce.Application.Mappings
 {
@@ -26,6 +27,7 @@ namespace ECommerce.Application.Mappings
         {
             c.Name = dto.Name;
             c.Description = dto.Description;
+            c.ImageUrl = dto.ImageUrl;
         }
     }
 }

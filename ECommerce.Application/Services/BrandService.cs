@@ -4,6 +4,7 @@ using ECommerce.Application.Mappings;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using ECommerce.Application.DTOs.Brands;
 
 namespace ECommerce.Application.Services
 {
@@ -62,7 +63,7 @@ namespace ECommerce.Application.Services
             var brand = await _uow.Brands.GetByIdAsync(id)
                ?? throw new NotFoundException("Brand", id);
 
-            if (await _uow.Brands.NameExistsAsync(dto.Name))
+            if (await _uow.Brands.NameExistsAsync(dto.Name, excludeId: id))
                 throw new ConflictException($"A brand with name '{dto.Name}' already exists.");
 
 

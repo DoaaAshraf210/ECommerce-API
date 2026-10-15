@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using ECommerce.Application.Mappings;
+using ECommerce.Application.DTOs.Categories;
 
 
 namespace ECommerce.Application.Services
@@ -64,7 +65,7 @@ namespace ECommerce.Application.Services
             var category = await _uow.Categories.GetByIdAsync(id)
                ?? throw new NotFoundException("Category", id);
 
-            if (await _uow.Categories.NameExistsAsync(dto.Name))
+            if (await _uow.Categories.NameExistsAsync(dto.Name,excludeId: id))
                 throw new ConflictException($"A category with name '{dto.Name}' already exists."); 
 
 
