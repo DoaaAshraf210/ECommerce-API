@@ -9,7 +9,7 @@ using ECommerce.Application.Mappings;
 
 namespace ECommerce.Application.Services
 {
-    internal class ProductService : IProductService
+    public class ProductService : IProductService
     {
         private readonly IUnitOfWork _uow;
 

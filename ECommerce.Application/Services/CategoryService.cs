@@ -31,12 +31,15 @@ namespace ECommerce.Application.Services
         public async Task DeleteAsync(int id)
         {
           
-            var category=await _uow.Categories.GetByIdAsync(id) ?? throw new NotFoundException("Category", id);
+
+            var category = await _uow.Categories.GetByIdAsync(id)
+       ?? throw new NotFoundException("Category", id);
+
+            if (await _uow.Products.ExistsAsync(p => p.CategoryId == id))
+                throw new ConflictException("Cannot delete a category that still has products.");
 
             _uow.Categories.Delete(category);
             await _uow.SaveChangesAsync();
-
-
 
         }
 

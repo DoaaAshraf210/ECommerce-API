@@ -29,11 +29,14 @@ namespace ECommerce.Application.Services
         public async Task DeleteAsync(int id)
         {
 
-            var brand = await _uow.Brands.GetByIdAsync(id) ?? throw new NotFoundException("Brand", id);
+            var brand = await _uow.Brands.GetByIdAsync(id)
+       ?? throw new NotFoundException("Brand", id);
+
+            if (await _uow.Products.ExistsAsync(p => p.BrandId == id))
+                throw new ConflictException("Cannot delete a brand that still has products.");
 
             _uow.Brands.Delete(brand);
             await _uow.SaveChangesAsync();
-
 
 
         }
