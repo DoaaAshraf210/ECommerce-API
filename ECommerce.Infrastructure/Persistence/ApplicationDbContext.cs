@@ -1,5 +1,8 @@
 ﻿using ECommerce.Domain.Common;
 using ECommerce.Domain.Entities;
+using ECommerce.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -7,7 +10,7 @@ using System.Text;
 
 namespace ECommerce.Infrastructure.Persistence
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser,IdentityRole<Guid>,Guid>
     {
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
@@ -22,6 +25,8 @@ namespace ECommerce.Infrastructure.Persistence
         {
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
             base.OnModelCreating(modelBuilder);
+            
+
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

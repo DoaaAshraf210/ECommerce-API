@@ -1,12 +1,14 @@
-﻿using ECommerce.Infrastructure.Persistence;
+﻿using ECommerce.Application.Interfaces.Repositories;
+using ECommerce.Infrastructure.Identity;
+using ECommerce.Infrastructure.Persistence;
+using ECommerce.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Microsoft.EntityFrameworkCore;
-using ECommerce.Application.Interfaces.Repositories;
-using ECommerce.Infrastructure.Repositories;
 namespace ECommerce.Infrastructure
 {
     public static class DependencyInjection
@@ -24,10 +26,18 @@ namespace ECommerce.Infrastructure
             services.AddScoped<IBrandRepository, BrandRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+            services.AddIdentityCore<ApplicationUser>(options =>
+            {
+                options.User.RequireUniqueEmail = true;
 
-
-
-
+                options.Password.RequiredLength = 8;
+                options.Password.RequireDigit = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireNonAlphanumeric = false;
+            })
+            .AddRoles<IdentityRole<Guid>>()
+            .AddEntityFrameworkStores<ApplicationDbContext>();
 
 
             return services;
