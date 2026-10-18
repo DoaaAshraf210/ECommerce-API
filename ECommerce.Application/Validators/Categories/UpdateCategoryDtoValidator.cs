@@ -17,7 +17,10 @@ namespace ECommerce.Application.Validators.Categories
                 .MaximumLength(1000);
 
             RuleFor(c => c.ImageUrl)
-                .MaximumLength(500);
+                .MaximumLength(500)
+                .Must(url => Uri.TryCreate(url, UriKind.Absolute, out _))
+                .When(c => !string.IsNullOrEmpty(c.ImageUrl))
+                .WithMessage("ImageUrl must be a valid URL.");
         }
 
     }

@@ -16,7 +16,10 @@ namespace ECommerce.Application.Validators.Brands
 
 
             RuleFor(b => b.LogoUrl)
-                .MaximumLength(500);
+    .MaximumLength(500)
+    .Must(url => Uri.TryCreate(url, UriKind.Absolute, out _))
+    .When(b => !string.IsNullOrEmpty(b.LogoUrl))
+    .WithMessage("LogoUrl must be a valid URL.");
         }
     }
 }
