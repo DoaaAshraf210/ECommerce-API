@@ -1,4 +1,5 @@
-﻿using ECommerce.Application.Interfaces.Repositories;
+﻿using ECommerce.Application.Interfaces;
+using ECommerce.Application.Interfaces.Repositories;
 using ECommerce.Infrastructure.Identity;
 using ECommerce.Infrastructure.Persistence;
 using ECommerce.Infrastructure.Repositories;
@@ -39,6 +40,10 @@ namespace ECommerce.Infrastructure
             .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<ApplicationDbContext>();
 
+
+            services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
+            services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+            services.AddScoped<IAuthService, AuthService>();
 
             return services;
         }

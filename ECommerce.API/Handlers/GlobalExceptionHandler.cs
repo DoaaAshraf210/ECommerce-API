@@ -40,6 +40,8 @@ namespace ECommerce.API.Handlers
             {
                 NotFoundException => (StatusCodes.Status404NotFound, "Not Found"),
                 ConflictException => (StatusCodes.Status409Conflict, "Conflict"),
+                UnauthorizedException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
+                BadRequestException => (StatusCodes.Status400BadRequest, "Bad Request"),
                 _ => (StatusCodes.Status500InternalServerError, "Server Error")
             };
 

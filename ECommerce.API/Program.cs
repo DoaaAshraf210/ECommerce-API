@@ -4,6 +4,10 @@ using ECommerce.API.Handlers;
 using ECommerce.Application;
  using ECommerce.Infrastructure;
 using ECommerce.Infrastructure.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using System.Text;
 namespace ECommerce.API
 {
     public class Program
@@ -22,52 +26,58 @@ namespace ECommerce.API
             });
             builder.Services.AddApplication();
             builder.Services.AddInfrastructure(builder.Configuration);
+
+            var jwt = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
+                ?? throw new InvalidOperationException("Jwt settings are missing.");
+
+            if (string.IsNullOrWhiteSpace(jwt.Key) || jwt.Key.Length < 32)
+                throw new InvalidOperationException("Jwt:Key must be at least 32 characters. Set it in User Secrets.");
+
+            builder.Services
+                .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.MapInboundClaims = false;
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidIssuer = jwt.Issuer,
+                        ValidateAudience = true,
+                        ValidAudience = jwt.Audience,
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
+                        ValidateLifetime = true,
+                        ClockSkew = TimeSpan.Zero,
+                        RoleClaimType = "role",
+                        NameClaimType = "name"
+                    };
+                });
+
             builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
             builder.Services.AddProblemDetails();
 
 
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
-            //builder.Services.AddSwaggerGen(swagger =>
-            //{
-            //    swagger.SwaggerDoc("v1", new Microsoft.OpenApi.OpenApiInfo
-            //    {
-            //        Title = "ECommerce API",
-            //        Version = "v1",
-            //        Description= "This is a sample ECommerce API for demonstration purposes.",
-            //    });
+            builder.Services.AddSwaggerGen(options =>
+            {
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    Description = "Paste your JWT token only (without the word Bearer)."
+                });
 
-            //swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-            //{
-            //    Description = "Enter 'Bearer' [space] followed by your valid token.",
-            //    Name = "Authorization",
-            //    In = ParameterLocation.Header,
-            //    Type = SecuritySchemeType.ApiKey,
-            //    Scheme = "Bearer",
-            //    BearerFormat = "JWT"
-
-
-            //});
-
-            //    swagger.AddSecurityRequirement(new OpenApiSecurityRequirement
-            //    {
-            //        {
-            //            new OpenApiSecurityScheme
-            //            {
-            //                Reference = new Microsoft.OpenApi.OpenApiReference
-            //                {
-            //                    Type = ReferenceType.SecurityScheme,
-            //                    Id = "Bearer"
-            //                }
-            //            },
-            //            new string[] {}
-            //        }
-            //    });
-            //});
+                options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+                {
+                    [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+                });
+            });          
 
             var app = builder.Build(); 
             await IdentitySeeder.SeedRolesAsync(app.Services);
+            await IdentitySeeder.SeedAdminAsync(app.Services, app.Configuration);
             app.UseExceptionHandler();            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
@@ -77,6 +87,7 @@ namespace ECommerce.API
 
             app.UseHttpsRedirection();
 
+            app.UseAuthentication();     
             app.UseAuthorization();
 
 
