@@ -1,8 +1,5 @@
 ﻿using ECommerce.Application.DTOs.Brands;
-using ECommerce.Application.DTOs.Categories;
-using ECommerce.Application.Interfaces.Repositories;
 using ECommerce.Application.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerce.API.Controllers

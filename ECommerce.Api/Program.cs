@@ -1,9 +1,9 @@
 
-using ECommerce.Api.Handlers;
+using ECommerce.API.Filters;
+using ECommerce.API.Handlers;
 using ECommerce.Application;
  using ECommerce.Infrastructure;
-using Microsoft.OpenApi;
-namespace ECommerce.Api
+namespace ECommerce.API
 {
     public class Program
     {
@@ -13,7 +13,12 @@ namespace ECommerce.Api
 
             // Add services to the container.
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers(options =>
+            {
+                //It executes after model binding and before the action; the DTO is ready,
+                //and the action will not execute if the data is invalid.
+                options.Filters.Add<ValidationFilter>();
+            });
             builder.Services.AddApplication();
             builder.Services.AddInfrastructure(builder.Configuration);
             builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
