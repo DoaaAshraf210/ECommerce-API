@@ -17,6 +17,7 @@ namespace ECommerce.Application
             services.AddScoped<IProductService, ProductService>();
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<IBrandService, BrandService>();
+            services.AddScoped<ICartService, CartService>();
             services.AddValidatorsFromAssemblyContaining<CreateProductDtoValidator>();
             return services;
         }

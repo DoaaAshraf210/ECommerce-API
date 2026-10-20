@@ -20,7 +20,6 @@ namespace ECommerce.Infrastructure.Persistence.Configurations
                    .HasForeignKey(c => c.UserId)
                    .OnDelete(DeleteBehavior.Cascade);
 
-            builder.HasIndex(c => c.UserId);
 
             builder.HasMany(c => c.Items)
                    .WithOne(i => i.Cart)

@@ -24,7 +24,8 @@ namespace ECommerce.Infrastructure
             services.AddScoped(typeof(IGenericRepository<>),typeof(GenericRepository<>));
             services.AddScoped<IProductRepository, ProductRepository>();
             services.AddScoped<ICategoryRepository, CategoryRepository>();
-            services.AddScoped<IBrandRepository, BrandRepository>();
+            services.AddScoped<IBrandRepository, BrandRepository>(); 
+            services.AddScoped<ICartRepository, CartRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             services.AddIdentityCore<ApplicationUser>(options =>

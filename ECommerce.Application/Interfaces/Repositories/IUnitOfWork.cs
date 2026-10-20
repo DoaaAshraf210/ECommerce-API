@@ -9,6 +9,8 @@ namespace ECommerce.Application.Interfaces.Repositories
         IProductRepository Products { get; }
         ICategoryRepository Categories { get; }
         IBrandRepository Brands { get; }
+        ICartRepository Carts { get; }
+
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }

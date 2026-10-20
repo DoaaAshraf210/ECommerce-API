@@ -11,8 +11,7 @@ namespace ECommerce.Infrastructure.Persistence.Configurations
     {
         public void Configure(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<CartItem> builder)
         {
-            builder.ToTable("CartItems");
-
+            builder.ToTable("CartItems", t => t.HasCheckConstraint("CK_CartItems_Quantity", "[Quantity] > 0"));
             builder.HasIndex(i => new { i.CartId, i.ProductId }).IsUnique();
           
             builder.HasOne(i=>i.Product).WithMany()
@@ -20,7 +19,6 @@ namespace ECommerce.Infrastructure.Persistence.Configurations
                    .OnDelete(DeleteBehavior.Restrict);
 
 
-            builder.ToTable("CartItems", t => t.HasCheckConstraint("CK_CartItems_Quantity", "[Quantity] > 0"));
 
             builder.HasQueryFilter(i => !i.Product.IsDeleted);
 

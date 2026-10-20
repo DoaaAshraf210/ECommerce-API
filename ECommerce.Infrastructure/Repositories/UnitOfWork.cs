@@ -13,15 +13,20 @@ namespace ECommerce.Infrastructure.Repositories
         public IProductRepository Products { get;  }
         public ICategoryRepository Categories { get;  }
         public IBrandRepository Brands { get; }
+
+        public ICartRepository Carts { get; }
+
         public UnitOfWork(ApplicationDbContext context,
         IProductRepository products,
         ICategoryRepository categories,
-        IBrandRepository brands)
+        IBrandRepository brands,
+        ICartRepository carts)
         {
             _context = context;
             Products = products;
             Categories = categories;
             Brands = brands;
+            Carts = carts;
         }
 
     
