@@ -30,6 +30,7 @@ namespace ECommerce.Infrastructure.Persistence.Configurations
                    .HasForeignKey(p => p.BrandId)
                    .OnDelete(DeleteBehavior.Restrict);
 
+            builder.Property(p => p.RowVersion).IsRowVersion();
             builder.HasQueryFilter(p => !p.IsDeleted);
         }
     }

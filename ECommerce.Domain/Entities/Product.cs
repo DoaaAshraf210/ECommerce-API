@@ -20,5 +20,6 @@ namespace ECommerce.Domain.Entities
         public int CategoryId { get; set; }
         public Category Category { get; set; }  = null!;
         public List<ProductImage> Images { get; set; } = new();
+        public byte[] RowVersion { get; set; } = null!;
     }
 }
