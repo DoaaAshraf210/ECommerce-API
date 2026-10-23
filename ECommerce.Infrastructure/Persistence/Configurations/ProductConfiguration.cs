@@ -11,8 +11,8 @@ namespace ECommerce.Infrastructure.Persistence.Configurations
     {
         public void Configure(EntityTypeBuilder<Product> builder)
         {
-            builder.ToTable("Products");
-
+            builder.ToTable("Products", t => t.HasCheckConstraint(
+                "CK_Products_StockQuantity", "[StockQuantity] >= 0"));
             builder.Property(p => p.Name).IsRequired().HasMaxLength(200);
             builder.Property(p => p.Description).HasMaxLength(2000);
             builder.Property(p => p.Sku).IsRequired().HasMaxLength(50);

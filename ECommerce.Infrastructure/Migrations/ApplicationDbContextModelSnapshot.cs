@@ -303,7 +303,10 @@ namespace ECommerce.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("Products", (string)null);
+                    b.ToTable("Products", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Products_StockQuantity", "[StockQuantity] >= 0");
+                        });
                 });
 
             modelBuilder.Entity("ECommerce.Domain.Entities.ProductImage", b =>

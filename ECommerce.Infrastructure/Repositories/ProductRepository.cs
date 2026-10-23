@@ -55,5 +55,7 @@ namespace ECommerce.Infrastructure.Repositories
 
         public async Task<bool> SkuExistsAsync(string sku, int? excludeId = null)
         => await _set.AnyAsync(p => p.Sku == sku && (excludeId == null || p.Id != excludeId));
+        public async Task<List<Product>> GetByIdsAsync(IReadOnlyCollection<int> ids)
+          => await _set.Where(p => ids.Contains(p.Id)).ToListAsync();
     }
 }

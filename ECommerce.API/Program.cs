@@ -20,10 +20,8 @@ namespace ECommerce.API
 
             builder.Services.AddControllers(options =>
             {
-                //It executes after model binding and before the action; the DTO is ready,
-                //and the action will not execute if the data is invalid.
                 options.Filters.Add<ValidationFilter>();
-            });
+            }).AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
             builder.Services.AddApplication();
             builder.Services.AddInfrastructure(builder.Configuration);
 

@@ -20,7 +20,7 @@ namespace ECommerce.Application.Interfaces.Repositories
 
         Task<bool> SkuExistsAsync(string sku, int? excludeId = null);
 
-
+        Task<List<Product>> GetByIdsAsync(IReadOnlyCollection<int> ids);
 
 
 
