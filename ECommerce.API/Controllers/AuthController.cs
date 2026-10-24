@@ -23,18 +23,30 @@ namespace ECommerce.API.Controllers
             => Ok(await _auth.LoginAsync(dto));
 
         [HttpPost("refresh")]
-        public async Task<ActionResult<AuthResponseDto>> refresh(RefreshTokenDto dto)
+        public async Task<ActionResult<AuthResponseDto>> Refresh(RefreshTokenDto dto)
         => Ok(await _auth.RefreshAsync(dto));
 
 
         [HttpPost("logout")]
-        public async Task<IActionResult> logout(RefreshTokenDto dto)
+        public async Task<IActionResult> Logout(RefreshTokenDto dto)
         {
             await _auth.LogoutAsync(dto);
            return  NoContent();
         }
 
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordDto dto)
+        {
+            await _auth.ForgotPasswordAsync(dto);
+            return Ok(new { message = "If this email is registered, a password reset link has been sent." });
+        }
 
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordDto dto)
+        {
+            await _auth.ResetPasswordAsync(dto);
+            return NoContent();
+        }
 
 
 

@@ -11,5 +11,7 @@ namespace ECommerce.Application.Interfaces
         Task<AuthResponseDto> LoginAsync(LoginDto dto);
         Task<AuthResponseDto> RefreshAsync(RefreshTokenDto dto);
         Task LogoutAsync(RefreshTokenDto dto);
+        Task ForgotPasswordAsync(ForgotPasswordDto dto);
+        Task ResetPasswordAsync(ResetPasswordDto dto);
     }
 }

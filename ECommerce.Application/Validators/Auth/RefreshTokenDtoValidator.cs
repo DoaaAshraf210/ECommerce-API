@@ -12,7 +12,7 @@ namespace ECommerce.Application.Validators.Auth
         {
             RuleFor(r => r.RefreshToken)
              .NotEmpty().WithMessage("Refresh Token is required.")
-             .MaximumLength(256); ;
+             .MaximumLength(256);
 
           
         }

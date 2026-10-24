@@ -15,3 +15,5 @@ public record AuthResponseDto(
     DateTime ExpiresAtUtc,
     string RefreshToken,
     List<string> Roles);
+public record ForgotPasswordDto(string Email);
+public record ResetPasswordDto(string Email, string Token, string NewPassword);

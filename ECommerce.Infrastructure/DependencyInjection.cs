@@ -1,5 +1,7 @@
 ﻿using ECommerce.Application.Interfaces;
 using ECommerce.Application.Interfaces.Repositories;
+using ECommerce.Application.Services;
+using ECommerce.Infrastructure.Email;
 using ECommerce.Infrastructure.Identity;
 using ECommerce.Infrastructure.Persistence;
 using ECommerce.Infrastructure.Repositories;
@@ -40,12 +42,30 @@ namespace ECommerce.Infrastructure
                 options.Password.RequireNonAlphanumeric = false;
             })
             .AddRoles<IdentityRole<Guid>>()
-            .AddEntityFrameworkStores<ApplicationDbContext>();
+            .AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
 
 
             services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
             services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
             services.AddScoped<IAuthService, AuthService>();
+
+
+
+            services.Configure<DataProtectionTokenProviderOptions>(o =>
+            o.TokenLifespan = TimeSpan.FromHours(1));
+
+            services.Configure<AppSettings>(configuration.GetSection("App"));
+            services.Configure<EmailSettings>(configuration.GetSection("Email"));
+
+            if (string.IsNullOrWhiteSpace(configuration["Email:Host"]))
+                services.AddScoped<IEmailService, LogEmailService>();
+            else
+                services.AddScoped<IEmailService, SmtpEmailService>();
+
+            services.AddHostedService<RefreshTokenCleanupService>();
+
+
+
 
             return services;
         }

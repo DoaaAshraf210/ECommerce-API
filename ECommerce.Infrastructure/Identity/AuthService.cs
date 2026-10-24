@@ -10,7 +10,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
+using System.Buffers.Text;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
 using static System.Net.WebRequestMethods;
 
@@ -23,18 +25,24 @@ namespace ECommerce.Infrastructure.Identity
         private readonly ApplicationDbContext _db;
         private readonly JwtSettings _settings;
         private readonly ILogger<AuthService> _logger;
+        private readonly IEmailService _email;
+        private readonly AppSettings _app;
 
         public AuthService(
             UserManager<ApplicationUser> userManager,
             IJwtTokenGenerator jwt,
             ApplicationDbContext db,
-            IOptions<JwtSettings> options,
+            IOptions<JwtSettings> jwtOptions,
+            IEmailService email,
+            IOptions<AppSettings> appOptions,
             ILogger<AuthService> logger)
         {
             _userManager = userManager;
             _jwt = jwt;
             _db = db;
-            _settings = options.Value;
+            _settings = jwtOptions.Value;
+            _email = email;
+            _app = appOptions.Value;
             _logger = logger;
         }
         public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
@@ -145,5 +153,68 @@ namespace ECommerce.Infrastructure.Identity
                 .Where(t => t.UserId == userId && t.RevokedAtUtc == null)
                 .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAtUtc, now));
         }
+
+        public async Task ForgotPasswordAsync(ForgotPasswordDto dto)
+        {
+            var user = await _userManager.FindByEmailAsync(dto.Email);
+
+            if (user is null)
+            {
+                _logger.LogInformation("Password reset requested for an unregistered email.");
+                return;                            
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var encodedToken = Base64Url.EncodeToString(Encoding.UTF8.GetBytes(token));
+
+            var link = $"{_app.FrontendBaseUrl.TrimEnd('/')}/reset-password" +
+                       $"?email={Uri.EscapeDataString(user.Email!)}&token={encodedToken}";
+
+            var body = $"""
+        <p>Hello {WebUtility.HtmlEncode(user.FullName)},</p>
+        <p>We received a request to reset your password. Click the link below to choose a new one:</p>
+        <p><a href="{link}">Reset password</a></p>
+        <p>This link expires in 1 hour. If you didn't request this, you can ignore this email.</p>
+        """;
+
+            await _email.SendAsync(user.Email!, "Reset your password", body);
+
+            _logger.LogInformation("Password reset email sent. UserId: {UserId}", user.Id);
+        }
+
+
+        public async Task ResetPasswordAsync(ResetPasswordDto dto)
+        {
+            const string invalidMessage = "Invalid or expired reset link.";
+
+            var user = await _userManager.FindByEmailAsync(dto.Email)
+                ?? throw new BadRequestException(invalidMessage);
+
+            string token;
+            try
+            {
+                token = Encoding.UTF8.GetString(Base64Url.DecodeFromChars(dto.Token));
+            }
+            catch (FormatException)
+            {
+                throw new BadRequestException(invalidMessage);
+            }
+
+            var result = await _userManager.ResetPasswordAsync(user, token, dto.NewPassword);
+
+            if (!result.Succeeded)
+            {
+                if (result.Errors.Any(e => e.Code == nameof(IdentityErrorDescriber.InvalidToken)))
+                    throw new BadRequestException(invalidMessage);
+
+                throw new BadRequestException(
+                    string.Join(" ", result.Errors.Select(e => e.Description)));
+            }
+
+            await RevokeAllAsync(user.Id);         
+
+            _logger.LogInformation("Password reset completed. UserId: {UserId}", user.Id);
+        }
+
     }
 }
