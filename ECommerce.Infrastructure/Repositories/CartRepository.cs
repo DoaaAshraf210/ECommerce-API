@@ -15,9 +15,12 @@ namespace ECommerce.Infrastructure.Repositories
 
         public async Task<Cart?> GetByUserIdWithItemsAsync(Guid userId)
             => await _set
-                .Include(c => c.Items)
-                    .ThenInclude(i => i.Product)
-                        .ThenInclude(p => p.Images)
-                .FirstOrDefaultAsync(c => c.UserId == userId);
+        .Include(c => c.Items)
+            .ThenInclude(i => i.Product)
+                .ThenInclude(p => p.Images)
+        .AsSplitQuery()
+        .FirstOrDefaultAsync(c => c.UserId == userId);
+
+
     }
 }

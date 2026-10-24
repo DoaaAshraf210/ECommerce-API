@@ -5,6 +5,7 @@ using ECommerce.Application.Services;
 using ECommerce.Domain.Entities;
 using ECommerce.Domain.Enums;
 using ECommerce.Domain.ValueObjects;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using System;
 using System.Collections.Generic;
@@ -21,13 +22,14 @@ namespace ECommerce.Tests.Services
         private readonly Mock<IProductRepository> _products = new();
         private readonly OrderService _sut;
 
+
         public OrderServiceTests()
         {
             _uow.Setup(u => u.Carts).Returns(_carts.Object);
             _uow.Setup(u => u.Orders).Returns(_orders.Object);
             _uow.Setup(u => u.Products).Returns(_products.Object);
 
-            _sut = new OrderService(_uow.Object);
+            _sut = new OrderService(_uow.Object, NullLogger<OrderService>.Instance);
         }
 
         private static CheckoutDto ValidCheckout() =>

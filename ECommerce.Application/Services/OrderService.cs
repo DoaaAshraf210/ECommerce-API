@@ -2,11 +2,13 @@
 using ECommerce.Application.Common.Models;
 using ECommerce.Application.DTOs.Orders;
 using ECommerce.Application.Interfaces.Repositories;
-using ECommerce.Domain.Entities;
 using ECommerce.Application.Mappings;
+using ECommerce.Domain.Entities;
 using ECommerce.Domain.Enums;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Net.NetworkInformation;
 using System.Text;
 
 namespace ECommerce.Application.Services
@@ -14,8 +16,13 @@ namespace ECommerce.Application.Services
     public class OrderService : IOrderService
     {
         private readonly IUnitOfWork _uow;
+        private readonly ILogger<OrderService> _logger;
 
-        public OrderService(IUnitOfWork uow) => _uow = uow;
+        public OrderService(IUnitOfWork uow, ILogger<OrderService> logger)
+        {
+            _uow = uow;
+            _logger = logger;
+        }
 
         // ================= Checkout =================
 
@@ -59,7 +66,10 @@ namespace ECommerce.Application.Services
 
             await _uow.Orders.AddAsync(order);
             cart.Items.Clear();
-            await _uow.SaveChangesAsync();   
+            await _uow.SaveChangesAsync();
+            _logger.LogInformation(
+                 "Order {OrderNumber} created for user {UserId}. Items: {ItemsCount}, Total: {TotalAmount}",
+                   order.OrderNumber, userId, order.Items.Count, order.TotalAmount);
 
             return order.ToDto();
         }
@@ -84,6 +94,9 @@ namespace ECommerce.Application.Services
 
             await CancelAndRestoreStockAsync(order);
             await _uow.SaveChangesAsync();
+
+
+            _logger.LogInformation("Order {OrderNumber}  cancelled by user {UserId}.",order.OrderNumber, userId);
 
             return order.ToDto();
         }
@@ -110,12 +123,20 @@ namespace ECommerce.Application.Services
                 throw new ConflictException(
                     $"Cannot change order status from '{order.Status}' to '{dto.Status}'.");
 
+            var oldStatus = order.Status;
+
             if (dto.Status == OrderStatus.Cancelled)
                 await CancelAndRestoreStockAsync(order);
             else
                 order.Status = dto.Status;
 
             await _uow.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Order {OrderNumber} status changed from {OldStatus} to {NewStatus}",
+                order.OrderNumber, oldStatus, order.Status);
+
+
             return order.ToDto();
         }
 

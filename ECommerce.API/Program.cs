@@ -7,7 +7,10 @@ using ECommerce.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Serilog;
 using System.Text;
+using Serilog;
+
 namespace ECommerce.API
 {
     public class Program
@@ -15,7 +18,10 @@ namespace ECommerce.API
         public async static Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
+            builder.Host.UseSerilog((context, services, configuration) => configuration
+                .ReadFrom.Configuration(context.Configuration)
+                .ReadFrom.Services(services)
+                .Enrich.FromLogContext());
             // Add services to the container.
 
             builder.Services.AddControllers(options =>
@@ -76,6 +82,7 @@ namespace ECommerce.API
             var app = builder.Build(); 
             await IdentitySeeder.SeedRolesAsync(app.Services);
             await IdentitySeeder.SeedAdminAsync(app.Services, app.Configuration);
+            app.UseSerilogRequestLogging();
             app.UseExceptionHandler();            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
