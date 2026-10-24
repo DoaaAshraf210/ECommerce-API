@@ -9,5 +9,7 @@ namespace ECommerce.Application.Interfaces
     {
         Task<AuthResponseDto> RegisterAsync(RegisterDto dto);
         Task<AuthResponseDto> LoginAsync(LoginDto dto);
+        Task<AuthResponseDto> RefreshAsync(RefreshTokenDto dto);
+        Task LogoutAsync(RefreshTokenDto dto);
     }
 }

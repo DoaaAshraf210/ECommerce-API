@@ -22,12 +22,17 @@ namespace ECommerce.API.Controllers
         public async Task<ActionResult<AuthResponseDto>> Login(LoginDto dto)
             => Ok(await _auth.LoginAsync(dto));
 
+        [HttpPost("refresh")]
+        public async Task<ActionResult<AuthResponseDto>> refresh(RefreshTokenDto dto)
+        => Ok(await _auth.RefreshAsync(dto));
 
 
-
-
-
-
+        [HttpPost("logout")]
+        public async Task<IActionResult> logout(RefreshTokenDto dto)
+        {
+            await _auth.LogoutAsync(dto);
+           return  NoContent();
+        }
 
 
 

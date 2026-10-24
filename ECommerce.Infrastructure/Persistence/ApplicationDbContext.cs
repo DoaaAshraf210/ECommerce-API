@@ -22,6 +22,7 @@ namespace ECommerce.Infrastructure.Persistence
         public DbSet<ProductImage> ProductImages => Set<ProductImage>();
         public DbSet<Cart> Carts => Set<Cart>();
         public DbSet<Order> Orders => Set<Order>();
+        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

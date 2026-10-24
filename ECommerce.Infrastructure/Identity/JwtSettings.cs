@@ -10,5 +10,6 @@ namespace ECommerce.Infrastructure.Identity
         public string Audience { get; set; } = null!;
         public string Key { get; set; } = null!;
         public int ExpiryMinutes { get; set; } = 60;
+        public int RefreshTokenDays { get; set; } = 7;
     }
 }
