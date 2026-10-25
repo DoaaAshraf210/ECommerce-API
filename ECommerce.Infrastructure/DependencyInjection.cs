@@ -65,7 +65,8 @@ namespace ECommerce.Infrastructure
             services.AddHostedService<RefreshTokenCleanupService>();
 
 
-
+            services.Configure<GoogleSettings>(configuration.GetSection("Google"));
+            services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
 
             return services;
         }

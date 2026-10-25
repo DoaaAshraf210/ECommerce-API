@@ -84,11 +84,18 @@ namespace ECommerce.API
             await IdentitySeeder.SeedAdminAsync(app.Services, app.Configuration);
             app.UseSerilogRequestLogging();
             app.UseExceptionHandler();            // Configure the HTTP request pipeline.
+        
+            
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
+                app.UseStaticFiles();
             }
+
+
+
+
 
             app.UseHttpsRedirection();
 

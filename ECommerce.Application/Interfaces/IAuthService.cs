@@ -13,5 +13,6 @@ namespace ECommerce.Application.Interfaces
         Task LogoutAsync(RefreshTokenDto dto);
         Task ForgotPasswordAsync(ForgotPasswordDto dto);
         Task ResetPasswordAsync(ResetPasswordDto dto);
+        Task<AuthResponseDto> GoogleLoginAsync(GoogleLoginDto dto);
     }
 }

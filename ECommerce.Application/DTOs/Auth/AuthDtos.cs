@@ -17,3 +17,4 @@ public record AuthResponseDto(
     List<string> Roles);
 public record ForgotPasswordDto(string Email);
 public record ResetPasswordDto(string Email, string Token, string NewPassword);
+public record GoogleLoginDto(string IdToken);

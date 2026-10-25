@@ -18,6 +18,7 @@ using static System.Net.WebRequestMethods;
 
 namespace ECommerce.Infrastructure.Identity
 {
+
     public class AuthService : IAuthService
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -27,6 +28,9 @@ namespace ECommerce.Infrastructure.Identity
         private readonly ILogger<AuthService> _logger;
         private readonly IEmailService _email;
         private readonly AppSettings _app;
+        IGoogleTokenValidator _google;
+        private const string GoogleProvider = "Google";
+
 
         public AuthService(
             UserManager<ApplicationUser> userManager,
@@ -35,7 +39,8 @@ namespace ECommerce.Infrastructure.Identity
             IOptions<JwtSettings> jwtOptions,
             IEmailService email,
             IOptions<AppSettings> appOptions,
-            ILogger<AuthService> logger)
+            ILogger<AuthService> logger,
+            IGoogleTokenValidator google)
         {
             _userManager = userManager;
             _jwt = jwt;
@@ -44,6 +49,7 @@ namespace ECommerce.Infrastructure.Identity
             _email = email;
             _app = appOptions.Value;
             _logger = logger;
+            _google = google;
         }
         public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
         {
@@ -183,50 +189,12 @@ namespace ECommerce.Infrastructure.Identity
         }
 
 
-        //public async Task ResetPasswordAsync(ResetPasswordDto dto)
-        //{
-        //    const string invalidMessage = "Invalid or expired reset link.";
-
-        //    var user = await _userManager.FindByEmailAsync(dto.Email)
-        //        ?? throw new BadRequestException(invalidMessage);
-
-        //    string token;
-        //    try
-        //    {
-        //        token = Encoding.UTF8.GetString(Base64Url.DecodeFromChars(dto.Token));
-        //    }
-        //    catch (FormatException)
-        //    {
-        //        throw new BadRequestException(invalidMessage);
-        //    }
-
-        //    var result = await _userManager.ResetPasswordAsync(user, token, dto.NewPassword);
-
-        //    if (!result.Succeeded)
-        //    {
-        //        if (result.Errors.Any(e => e.Code == nameof(IdentityErrorDescriber.InvalidToken)))
-        //            throw new BadRequestException(invalidMessage);
-
-        //        throw new BadRequestException(
-        //            string.Join(" ", result.Errors.Select(e => e.Description)));
-        //    }
-
-        //    await RevokeAllAsync(user.Id);         
-
-        //    _logger.LogInformation("Password reset completed. UserId: {UserId}", user.Id);
-        //}
-
-
         public async Task ResetPasswordAsync(ResetPasswordDto dto)
         {
             const string invalidMessage = "Invalid or expired reset link.";
 
-            var user = await _userManager.FindByEmailAsync(dto.Email);
-            if (user is null)
-            {
-                _logger.LogWarning("Reset password failed: user not found.");
-                throw new BadRequestException(invalidMessage);
-            }
+            var user = await _userManager.FindByEmailAsync(dto.Email)
+                ?? throw new BadRequestException(invalidMessage);
 
             string token;
             try
@@ -235,8 +203,6 @@ namespace ECommerce.Infrastructure.Identity
             }
             catch (FormatException)
             {
-                _logger.LogWarning(
-                    "Reset password failed: token is not valid Base64Url. UserId: {UserId}", user.Id);
                 throw new BadRequestException(invalidMessage);
             }
 
@@ -244,10 +210,6 @@ namespace ECommerce.Infrastructure.Identity
 
             if (!result.Succeeded)
             {
-                _logger.LogWarning(
-                    "Reset password failed. UserId: {UserId}, Errors: {Errors}",
-                    user.Id, string.Join(", ", result.Errors.Select(e => e.Code)));
-
                 if (result.Errors.Any(e => e.Code == nameof(IdentityErrorDescriber.InvalidToken)))
                     throw new BadRequestException(invalidMessage);
 
@@ -259,5 +221,68 @@ namespace ECommerce.Infrastructure.Identity
 
             _logger.LogInformation("Password reset completed. UserId: {UserId}", user.Id);
         }
+
+
+
+        public async Task<AuthResponseDto> GoogleLoginAsync(GoogleLoginDto dto)
+        {
+            var info = await _google.ValidateAsync(dto.IdToken)
+                ?? throw new UnauthorizedException("Invalid Google token.");
+
+            if (!info.EmailVerified)
+                throw new UnauthorizedException("Your Google email is not verified.");
+
+            var user = await _userManager.FindByLoginAsync(GoogleProvider, info.Subject);
+
+            if (user is null)
+            {
+                user = await _userManager.FindByEmailAsync(info.Email);
+
+                if (user is null)
+                {
+                    user = new ApplicationUser
+                    {
+                        FullName = string.IsNullOrWhiteSpace(info.Name)
+                            ? info.Email.Split('@')[0]
+                            : info.Name,
+                        Email = info.Email,
+                        UserName = info.Email,
+                        EmailConfirmed = true
+                    };
+
+                    var created = await _userManager.CreateAsync(user);
+                    if (!created.Succeeded)
+                        throw new BadRequestException(
+                            string.Join(" ", created.Errors.Select(e => e.Description)));
+
+                    await _userManager.AddToRoleAsync(user, Roles.Customer);
+                }
+                else if (!user.EmailConfirmed)
+                {
+                    _logger.LogWarning(
+                        "Linking Google to an unconfirmed account. Removing password. UserId: {UserId}", user.Id);
+
+                    if (await _userManager.HasPasswordAsync(user))
+                        await _userManager.RemovePasswordAsync(user);
+
+                    user.EmailConfirmed = true;
+                    await _userManager.UpdateAsync(user);
+                    await RevokeAllAsync(user.Id);
+                }
+
+                var linked = await _userManager.AddLoginAsync(
+                    user, new UserLoginInfo(GoogleProvider, info.Subject, GoogleProvider));
+
+                if (!linked.Succeeded)
+                    throw new BadRequestException(
+                        string.Join(" ", linked.Errors.Select(e => e.Description)));
+
+                _logger.LogInformation("Google account linked. UserId: {UserId}", user.Id);
+            }
+
+            return await IssueTokensAsync(user);
+        }
+
+
     }
 }

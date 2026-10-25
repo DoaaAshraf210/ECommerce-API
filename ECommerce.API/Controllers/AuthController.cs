@@ -49,6 +49,10 @@ namespace ECommerce.API.Controllers
         }
 
 
+        [HttpPost("google")]
+        public async Task<ActionResult<AuthResponseDto>> Googel(GoogleLoginDto dto) 
+            => await _auth.GoogleLoginAsync(dto);
+
 
 
     }
