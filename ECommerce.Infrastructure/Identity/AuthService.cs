@@ -183,12 +183,50 @@ namespace ECommerce.Infrastructure.Identity
         }
 
 
+        //public async Task ResetPasswordAsync(ResetPasswordDto dto)
+        //{
+        //    const string invalidMessage = "Invalid or expired reset link.";
+
+        //    var user = await _userManager.FindByEmailAsync(dto.Email)
+        //        ?? throw new BadRequestException(invalidMessage);
+
+        //    string token;
+        //    try
+        //    {
+        //        token = Encoding.UTF8.GetString(Base64Url.DecodeFromChars(dto.Token));
+        //    }
+        //    catch (FormatException)
+        //    {
+        //        throw new BadRequestException(invalidMessage);
+        //    }
+
+        //    var result = await _userManager.ResetPasswordAsync(user, token, dto.NewPassword);
+
+        //    if (!result.Succeeded)
+        //    {
+        //        if (result.Errors.Any(e => e.Code == nameof(IdentityErrorDescriber.InvalidToken)))
+        //            throw new BadRequestException(invalidMessage);
+
+        //        throw new BadRequestException(
+        //            string.Join(" ", result.Errors.Select(e => e.Description)));
+        //    }
+
+        //    await RevokeAllAsync(user.Id);         
+
+        //    _logger.LogInformation("Password reset completed. UserId: {UserId}", user.Id);
+        //}
+
+
         public async Task ResetPasswordAsync(ResetPasswordDto dto)
         {
             const string invalidMessage = "Invalid or expired reset link.";
 
-            var user = await _userManager.FindByEmailAsync(dto.Email)
-                ?? throw new BadRequestException(invalidMessage);
+            var user = await _userManager.FindByEmailAsync(dto.Email);
+            if (user is null)
+            {
+                _logger.LogWarning("Reset password failed: user not found.");
+                throw new BadRequestException(invalidMessage);
+            }
 
             string token;
             try
@@ -197,6 +235,8 @@ namespace ECommerce.Infrastructure.Identity
             }
             catch (FormatException)
             {
+                _logger.LogWarning(
+                    "Reset password failed: token is not valid Base64Url. UserId: {UserId}", user.Id);
                 throw new BadRequestException(invalidMessage);
             }
 
@@ -204,6 +244,10 @@ namespace ECommerce.Infrastructure.Identity
 
             if (!result.Succeeded)
             {
+                _logger.LogWarning(
+                    "Reset password failed. UserId: {UserId}, Errors: {Errors}",
+                    user.Id, string.Join(", ", result.Errors.Select(e => e.Code)));
+
                 if (result.Errors.Any(e => e.Code == nameof(IdentityErrorDescriber.InvalidToken)))
                     throw new BadRequestException(invalidMessage);
 
@@ -211,10 +255,9 @@ namespace ECommerce.Infrastructure.Identity
                     string.Join(" ", result.Errors.Select(e => e.Description)));
             }
 
-            await RevokeAllAsync(user.Id);         
+            await RevokeAllAsync(user.Id);
 
             _logger.LogInformation("Password reset completed. UserId: {UserId}", user.Id);
         }
-
     }
 }
