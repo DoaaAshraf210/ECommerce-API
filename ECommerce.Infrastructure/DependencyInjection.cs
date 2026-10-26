@@ -1,6 +1,7 @@
 ﻿using ECommerce.Application.Interfaces;
 using ECommerce.Application.Interfaces.Repositories;
 using ECommerce.Application.Services;
+using ECommerce.Infrastructure.Caching;
 using ECommerce.Infrastructure.Email;
 using ECommerce.Infrastructure.Identity;
 using ECommerce.Infrastructure.Persistence;
@@ -67,6 +68,19 @@ namespace ECommerce.Infrastructure
 
             services.Configure<GoogleSettings>(configuration.GetSection("Google"));
             services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
+            var redis = configuration.GetConnectionString("Redis");
+
+            if (!string.IsNullOrWhiteSpace(redis))
+            {
+                services.AddStackExchangeRedisCache(options =>
+                {
+                    options.Configuration = redis;
+                    options.InstanceName = "ecommerce:v1:";
+                });
+            }
+
+            services.AddHybridCache();                                 
+            services.AddSingleton<ICacheService, HybridCacheService>();
 
             return services;
         }

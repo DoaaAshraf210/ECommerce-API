@@ -1,18 +1,25 @@
-﻿using ECommerce.Application.Common.Exceptions;
+﻿using ECommerce.Application.Common.Caching;
+using ECommerce.Application.Common.Exceptions;
+using ECommerce.Application.DTOs.Brands;
+using ECommerce.Application.Interfaces;
 using ECommerce.Application.Interfaces.Repositories;
 using ECommerce.Application.Mappings;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using ECommerce.Application.DTOs.Brands;
 
 namespace ECommerce.Application.Services
 {
     public class BrandService : IBrandService
     {
         private readonly IUnitOfWork _uow;
-        public BrandService(IUnitOfWork uow)
-        => _uow = uow;
+        private readonly ICacheService _cache;
+        public BrandService(IUnitOfWork uow, ICacheService cache)
+        {
+            _uow = uow;
+            _cache = cache;
+        }
+
         
         public async Task<BrandDto> CreateAsync(CreateBrandDto dto)
         {
@@ -23,6 +30,7 @@ namespace ECommerce.Application.Services
             var brand = dto.ToEntity();
             await _uow.Brands.AddAsync(brand);
             await _uow.SaveChangesAsync();
+            await _cache.RemoveByTagAsync(CacheTags.Brands);
             return brand.ToDto();
         }
 
@@ -37,6 +45,8 @@ namespace ECommerce.Application.Services
 
             _uow.Brands.Delete(brand);
             await _uow.SaveChangesAsync();
+            await _cache.RemoveByTagAsync(CacheTags.Brands);
+
 
 
         }
@@ -44,10 +54,19 @@ namespace ECommerce.Application.Services
         public async Task<List<BrandDto>> GetAllAsync()
         {
 
-            var brands = await _uow.Brands.GetAllAsync();
 
-            return brands.Select(b => b.ToDto()).ToList();
+            return await _cache.GetOrCreateAsync(
+                   CacheKeys.Brands,
+                   async ct =>
+                   {
+                       var brands = await _uow.Brands.GetAllAsync();
 
+                       return brands.Select(b => b.ToDto()).ToList();
+
+
+                   },
+                   expiration: TimeSpan.FromMinutes(10),
+                   tags: new[] { CacheTags.Brands });
 
 
 
@@ -72,6 +91,9 @@ namespace ECommerce.Application.Services
 
             brand.UpdateFrom(dto);
             await _uow.SaveChangesAsync();
+            await _cache.RemoveByTagAsync(CacheTags.Categories);
+            await _cache.RemoveByTagAsync(CacheTags.Products);
+
 
 
         }

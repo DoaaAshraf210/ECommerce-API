@@ -12,8 +12,8 @@ namespace ECommerce.Application.Validators.Auth
         {
 
             RuleFor(g => g.IdToken)
-                .NotEmpty().WithMessage("Email is required.")
-                .MaximumLength(4096); ;
+                .NotEmpty().WithMessage("Google ID token is required.")
+                .MaximumLength(4096);
 
        
         }

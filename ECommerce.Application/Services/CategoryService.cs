@@ -1,10 +1,14 @@
-﻿using ECommerce.Application.Common.Exceptions;
+﻿using ECommerce.Application.Common.Caching;
+using ECommerce.Application.Common.Exceptions;
+using ECommerce.Application.Common.Models;
+using ECommerce.Application.DTOs.Categories;
+using ECommerce.Application.DTOs.Products;
+using ECommerce.Application.Interfaces;
 using ECommerce.Application.Interfaces.Repositories;
+using ECommerce.Application.Mappings;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using ECommerce.Application.Mappings;
-using ECommerce.Application.DTOs.Categories;
 
 
 namespace ECommerce.Application.Services
@@ -12,9 +16,12 @@ namespace ECommerce.Application.Services
     public class CategoryService : ICategoryService
     {
         private readonly IUnitOfWork _uow;
-        public CategoryService(IUnitOfWork uow)
+        private readonly ICacheService _cache;
+
+        public CategoryService(IUnitOfWork uow, ICacheService cache)
         {
             _uow = uow;
+            _cache = cache;
         }
         public async Task<CategoryDto> CreateAsync(CreateCategoryDto dto)
         {
@@ -25,6 +32,7 @@ namespace ECommerce.Application.Services
             var category = dto.ToEntity();
             await _uow.Categories.AddAsync(category);
             await _uow.SaveChangesAsync();
+            await _cache.RemoveByTagAsync(CacheTags.Categories);
             return category.ToDto();
         }
 
@@ -40,18 +48,28 @@ namespace ECommerce.Application.Services
 
             _uow.Categories.Delete(category);
             await _uow.SaveChangesAsync();
+            await _cache.RemoveByTagAsync(CacheTags.Categories);
+
 
         }
 
         public async Task<List<CategoryDto>> GetAllAsync()
         {
 
-         var categories=   await _uow.Categories.GetAllAsync();
+         
 
-            return categories.Select(c => c.ToDto()).ToList();
+            return await _cache.GetOrCreateAsync(
+                   CacheKeys.Categories,
+                   async ct =>
+                   {
+                       var categories = await _uow.Categories.GetAllAsync();
+
+                       return categories.Select(c => c.ToDto()).ToList();
 
 
-
+                   },
+                   expiration: TimeSpan.FromMinutes(10),
+                   tags: new[] { CacheTags.Categories });
 
         }
 
@@ -74,6 +92,9 @@ namespace ECommerce.Application.Services
 
             category.UpdateFrom(dto);
             await _uow.SaveChangesAsync();
+            await _cache.RemoveByTagAsync(CacheTags.Categories);
+            await _cache.RemoveByTagAsync(CacheTags.Products);
+
 
 
         }
