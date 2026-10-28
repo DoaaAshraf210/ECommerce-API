@@ -91,7 +91,7 @@ namespace ECommerce.Application.Services
 
             brand.UpdateFrom(dto);
             await _uow.SaveChangesAsync();
-            await _cache.RemoveByTagAsync(CacheTags.Categories);
+            await _cache.RemoveByTagAsync(CacheTags.Brands);
             await _cache.RemoveByTagAsync(CacheTags.Products);
 
 

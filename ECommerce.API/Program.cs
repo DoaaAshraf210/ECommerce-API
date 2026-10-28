@@ -79,7 +79,10 @@ namespace ECommerce.API
                 });
             });          
 
-            var app = builder.Build(); 
+            var app = builder.Build();
+            var redisConfigured = !string.IsNullOrWhiteSpace(app.Configuration.GetConnectionString("Redis"));
+            app.Logger.LogInformation("Cache mode: {Mode}",
+                redisConfigured ? "Redis (L2) + memory (L1)" : "memory only (L1)");
             await IdentitySeeder.SeedRolesAsync(app.Services);
             await IdentitySeeder.SeedAdminAsync(app.Services, app.Configuration);
             app.UseSerilogRequestLogging();
