@@ -76,15 +76,28 @@ namespace ECommerce.Infrastructure.Identity
         public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
         {
             var user = await _userManager.FindByEmailAsync(dto.Email);
+
+            if (user is not null && await _userManager.IsLockedOutAsync(user))
+            {
+                _logger.LogWarning("Login blocked: account is locked. UserId: {UserId}", user.Id);
+                throw new ForbiddenException("Your account is locked. Please contact support or try again later.");
+            }
+
             var isValid = user is not null && await _userManager.CheckPasswordAsync(user, dto.Password);
 
             if (!isValid)
             {
+                if (user is not null)
+                    await _userManager.AccessFailedAsync(user);   // يعدّ المحاولة، ويقفل بعد 5
+
                 _logger.LogWarning("Failed login attempt. UserId: {UserId}", user?.Id);
                 throw new UnauthorizedException("Invalid email or password.");
             }
 
-            return await IssueTokensAsync(user!);
+            if (user!.AccessFailedCount > 0)
+                await _userManager.ResetAccessFailedCountAsync(user);
+
+            return await IssueTokensAsync(user);
         }
 
         public async Task<AuthResponseDto> RefreshAsync(RefreshTokenDto dto)
@@ -93,6 +106,10 @@ namespace ECommerce.Infrastructure.Identity
             var stored = await _db.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == hash);
 
             if (stored is null)
+                throw new UnauthorizedException("Invalid refresh token.");
+
+            var user = await _userManager.FindByIdAsync(stored.UserId.ToString());
+            if (user is null || await _userManager.IsLockedOutAsync(user))
                 throw new UnauthorizedException("Invalid refresh token.");
 
             if (stored.RevokedAtUtc is not null)
@@ -106,12 +123,8 @@ namespace ECommerce.Infrastructure.Identity
             if (stored.ExpiresAtUtc <= DateTime.UtcNow)
                 throw new UnauthorizedException("Refresh token expired. Please log in again.");
 
-            var user = await _userManager.FindByIdAsync(stored.UserId.ToString())
-                ?? throw new UnauthorizedException("Invalid refresh token.");
-
-            return await IssueTokensAsync(user, stored);   // Rotation
+            return await IssueTokensAsync(user, stored);
         }
-
         public async Task LogoutAsync(RefreshTokenDto dto)
         {
             var hash = RefreshTokenHelper.Hash(dto.RefreshToken);
@@ -152,14 +165,8 @@ namespace ECommerce.Infrastructure.Identity
                 user.Id, user.FullName, user.Email!, accessToken, expires, rawRefresh, roles.ToList());
         }
 
-        private async Task RevokeAllAsync(Guid userId)
-        {
-            var now = DateTime.UtcNow;
-            await _db.RefreshTokens
-                .Where(t => t.UserId == userId && t.RevokedAtUtc == null)
-                .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAtUtc, now));
-        }
-
+        private Task<int> RevokeAllAsync(Guid userId)
+                => RefreshTokenHelper.RevokeAllAsync(_db, userId);
         public async Task ForgotPasswordAsync(ForgotPasswordDto dto)
         {
             var user = await _userManager.FindByEmailAsync(dto.Email);
@@ -279,6 +286,8 @@ namespace ECommerce.Infrastructure.Identity
 
                 _logger.LogInformation("Google account linked. UserId: {UserId}", user.Id);
             }
+            if (await _userManager.IsLockedOutAsync(user))
+                throw new ForbiddenException("Your account is locked. Please contact support or try again later.");
 
             return await IssueTokensAsync(user);
         }
