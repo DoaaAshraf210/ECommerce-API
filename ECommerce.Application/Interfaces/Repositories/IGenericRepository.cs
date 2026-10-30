@@ -13,7 +13,7 @@ namespace ECommerce.Application.Interfaces.Repositories
         Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
 
         Task AddAsync(T entity);
-        void Update(T entity);
+        //void Update(T entity);
         void Delete(T entity);
 
 

@@ -5,6 +5,7 @@ using ECommerce.Infrastructure.Caching;
 using ECommerce.Infrastructure.Email;
 using ECommerce.Infrastructure.Identity;
 using ECommerce.Infrastructure.Persistence;
+using ECommerce.Infrastructure.Queries;
 using ECommerce.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -81,7 +82,7 @@ namespace ECommerce.Infrastructure
 
             services.AddHybridCache();                                 
             services.AddSingleton<ICacheService, HybridCacheService>();
-
+            services.AddScoped<IDashboardQueries, DashboardQueries>();
             return services;
         }
     }

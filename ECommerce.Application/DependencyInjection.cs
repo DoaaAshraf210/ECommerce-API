@@ -20,6 +20,10 @@ namespace ECommerce.Application
             services.AddScoped<ICartService, CartService>();
             services.AddScoped<IOrderService, OrderService>();
             services.AddValidatorsFromAssemblyContaining<CreateProductDtoValidator>();
+            services.AddScoped<IDashboardService, DashboardService>();
+
+
+
             return services;
         }
     }

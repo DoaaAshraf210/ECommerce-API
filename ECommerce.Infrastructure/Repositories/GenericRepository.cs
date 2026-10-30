@@ -31,8 +31,8 @@ namespace ECommerce.Infrastructure.Repositories
         public async Task AddAsync(T entity)
             => await _set.AddAsync(entity);
 
-        public void Update(T entity)
-            => _set.Update(entity);
+        //public void Update(T entity)
+        //    => _set.Update(entity);
 
         public void Delete(T entity)
         {

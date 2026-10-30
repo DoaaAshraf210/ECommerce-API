@@ -80,6 +80,12 @@ namespace ECommerce.API
             });          
 
             var app = builder.Build();
+            if (!app.Environment.IsDevelopment()
+              && string.IsNullOrWhiteSpace(app.Configuration["Email:Host"]))
+            {
+                throw new InvalidOperationException(
+                    "Email:Host must be configured outside Development (LogEmailService leaks reset tokens).");
+            }
             var redisConfigured = !string.IsNullOrWhiteSpace(app.Configuration.GetConnectionString("Redis"));
             app.Logger.LogInformation("Cache mode: {Mode}",
                 redisConfigured ? "Redis (L2) + memory (L1)" : "memory only (L1)");
@@ -95,10 +101,6 @@ namespace ECommerce.API
                 app.UseSwaggerUI();
                 app.UseStaticFiles();
             }
-
-
-
-
 
             app.UseHttpsRedirection();
 
