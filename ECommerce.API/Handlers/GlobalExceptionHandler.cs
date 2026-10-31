@@ -43,6 +43,7 @@ namespace ECommerce.API.Handlers
                 UnauthorizedException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
                 BadRequestException => (StatusCodes.Status400BadRequest, "Bad Request"),
                 ForbiddenException => (StatusCodes.Status403Forbidden, "Forbidden"),
+                BadHttpRequestException bad => (bad.StatusCode, "Bad Request"),
                 _ => (StatusCodes.Status500InternalServerError, "Server Error")
             };
 

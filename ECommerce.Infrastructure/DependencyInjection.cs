@@ -7,6 +7,7 @@ using ECommerce.Infrastructure.Identity;
 using ECommerce.Infrastructure.Persistence;
 using ECommerce.Infrastructure.Queries;
 using ECommerce.Infrastructure.Repositories;
+using ECommerce.Infrastructure.Storage;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -87,7 +88,8 @@ namespace ECommerce.Infrastructure
             services.AddSingleton<ICacheService, HybridCacheService>();
             services.AddScoped<IDashboardQueries, DashboardQueries>();
             services.AddScoped<IUserAdminService, UserAdminService>();
-
+            services.Configure<StorageSettings>(configuration.GetSection("Storage"));
+            services.AddSingleton<IFileStorage, LocalFileStorage>();
             return services;
         }
     }

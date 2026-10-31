@@ -4,12 +4,14 @@ using ECommerce.API.Handlers;
 using ECommerce.Application;
  using ECommerce.Infrastructure;
 using ECommerce.Infrastructure.Identity;
+using ECommerce.Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
-using System.Text;
 using Serilog;
+using System.Text;
 
 namespace ECommerce.API
 {
@@ -104,6 +106,20 @@ namespace ECommerce.API
 
             app.UseHttpsRedirection();
 
+            var storage = app.Configuration.GetSection("Storage").Get<StorageSettings>() ?? new StorageSettings();
+            var uploadsRoot = storage.GetRootPath(app.Environment.ContentRootPath);
+            Directory.CreateDirectory(uploadsRoot);
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(uploadsRoot),
+                RequestPath = "/uploads",
+                OnPrepareResponse = ctx =>
+                {
+                    ctx.Context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+                    ctx.Context.Response.Headers["Cache-Control"] = "public,max-age=31536000,immutable";
+                }
+            });
             app.UseAuthentication();     
             app.UseAuthorization();
 

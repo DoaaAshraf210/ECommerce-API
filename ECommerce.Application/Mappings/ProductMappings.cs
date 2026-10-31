@@ -20,7 +20,8 @@ namespace ECommerce.Application.Mappings
         p.Category.Name,
         p.BrandId,
         p.Brand.Name,
-        p.Images.Select(i => i.Url).ToList());
+        p.Images.OrderByDescending(i => i.IsMain)
+            .ThenBy(i => i.Id).Select(i => i.Url).ToList());
 
         public static Product ToEntity(this CreateProductDto dto) => new()
         {

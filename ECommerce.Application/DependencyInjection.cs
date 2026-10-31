@@ -21,7 +21,7 @@ namespace ECommerce.Application
             services.AddScoped<IOrderService, OrderService>();
             services.AddValidatorsFromAssemblyContaining<CreateProductDtoValidator>();
             services.AddScoped<IDashboardService, DashboardService>();
-
+            services.AddScoped<IProductImageService, ProductImageService>();
 
 
             return services;
