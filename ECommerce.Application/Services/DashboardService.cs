@@ -1,6 +1,7 @@
 ﻿using ECommerce.Application.Common.Caching;
 using ECommerce.Application.DTOs.Dashboard;
 using ECommerce.Application.Interfaces;
+using ECommerce.Application.Common.Constants;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,7 +10,6 @@ namespace ECommerce.Application.Services
 {
     public class DashboardService : IDashboardService
     {
-        private const int DefaultLowStockThreshold = 5;
         private static readonly string[] Tags = { CacheTags.Dashboard };
 
         private readonly IDashboardQueries _queries;
@@ -24,7 +24,7 @@ namespace ECommerce.Application.Services
         public Task<DashboardSummaryDto> GetSummaryAsync(CancellationToken ct = default)
             => _cache.GetOrCreateAsync(
                 CacheKeys.DashboardSummary,
-                token => _queries.GetSummaryAsync(DefaultLowStockThreshold, token),
+                token => _queries.GetSummaryAsync(StockRules.LowStockThreshold, token),
                 TimeSpan.FromSeconds(60), Tags, ct);
 
         public Task<List<SalesPointDto>> GetSalesAsync(int days, CancellationToken ct = default)

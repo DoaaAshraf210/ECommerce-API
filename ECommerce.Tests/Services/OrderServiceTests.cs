@@ -1,5 +1,7 @@
 ﻿using ECommerce.Application.Common.Exceptions;
+using ECommerce.Application.DTOs.Notifications;
 using ECommerce.Application.DTOs.Orders;
+using ECommerce.Application.Interfaces;
 using ECommerce.Application.Interfaces.Repositories;
 using ECommerce.Application.Services;
 using ECommerce.Domain.Entities;
@@ -22,6 +24,7 @@ namespace ECommerce.Tests.Services
         private readonly Mock<IProductRepository> _products = new();
         private readonly OrderService _sut;
 
+        private readonly Mock<IAdminNotifier> _notifier = new();
 
         public OrderServiceTests()
         {
@@ -29,7 +32,7 @@ namespace ECommerce.Tests.Services
             _uow.Setup(u => u.Orders).Returns(_orders.Object);
             _uow.Setup(u => u.Products).Returns(_products.Object);
 
-            _sut = new OrderService(_uow.Object, NullLogger<OrderService>.Instance);
+            _sut = new OrderService(_uow.Object, NullLogger<OrderService>.Instance, _notifier.Object);
         }
 
         private static CheckoutDto ValidCheckout() =>
@@ -211,6 +214,97 @@ namespace ECommerce.Tests.Services
             // Act + Assert
             await Assert.ThrowsAsync<NotFoundException>(
                 () => _sut.GetMyOrderAsync(strangerId, 5));
+        }
+        [Fact]
+        public async Task CheckoutAsync_ValidCart_NotifiesAdmins()
+        {
+            var userId = Guid.NewGuid();
+            var product = NewProduct(stock: 10, price: 100m);
+            var cart = new Cart { UserId = userId };
+            cart.Items.Add(new CartItem { ProductId = product.Id, Product = product, Quantity = 3 });
+
+            _carts.Setup(c => c.GetByUserIdWithItemsAsync(userId)).ReturnsAsync(cart);
+
+            // Act
+            await _sut.CheckoutAsync(userId, ValidCheckout());
+
+            // Assert
+            _notifier.Verify(n => n.OrderCreatedAsync(
+                It.Is<OrderCreatedNotification>(x =>
+                    !string.IsNullOrWhiteSpace(x.OrderNumber) &&
+                    x.TotalAmount == 300m),
+                It.IsAny<CancellationToken>()), Times.Once);
+
+        }
+
+        [Fact]
+        public async Task CheckoutAsync_EmptyCart_DoesNotNotify()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            _carts.Setup(c => c.GetByUserIdWithItemsAsync(userId))
+                  .ReturnsAsync(new Cart { UserId = userId });
+
+            // Act
+            await Assert.ThrowsAsync<BadRequestException>(
+                () => _sut.CheckoutAsync(userId, ValidCheckout()));
+
+            // Assert
+            VerifyNoNotifications();
+        }
+
+        [Fact]
+        public async Task CheckoutAsync_InsufficientStock_DoesNotNotify()
+        {
+            var userId = Guid.NewGuid();
+            var product = NewProduct(stock: 3);
+            var cart = new Cart { UserId = userId };
+            cart.Items.Add(new CartItem { ProductId = product.Id, Product = product, Quantity = 5 });
+
+            _carts.Setup(c => c.GetByUserIdWithItemsAsync(userId)).ReturnsAsync(cart);
+
+            // Act
+            await Assert.ThrowsAsync<ConflictException>(
+                () => _sut.CheckoutAsync(userId, ValidCheckout()));
+
+            // Assert
+            VerifyNoNotifications();
+        }
+
+        [Theory]
+        [InlineData(8, 3, true)]    
+        [InlineData(20, 3, false)]  
+        public async Task CheckoutAsync_StockDropsToThreshold_SendsLowStock(
+            int stock, int quantity, bool shouldNotify)
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var product = NewProduct(stock: stock);
+            var cart = new Cart { UserId = userId };
+            cart.Items.Add(new CartItem { ProductId = product.Id, Product = product, Quantity = quantity });
+
+            _carts.Setup(c => c.GetByUserIdWithItemsAsync(userId)).ReturnsAsync(cart);
+
+            // Act
+            await _sut.CheckoutAsync(userId, ValidCheckout());
+
+            // Assert
+            _notifier.Verify(n => n.LowStockAsync(
+                It.Is<IReadOnlyList<LowStockNotification>>(l =>
+                    l.Count == 1 &&
+                    l[0].ProductId == product.Id &&
+                    l[0].StockQuantity == stock - quantity),
+                It.IsAny<CancellationToken>()),
+                shouldNotify ? Times.Once() : Times.Never());
+        }
+
+        // ───────── Helper ─────────
+        private void VerifyNoNotifications()
+        {
+            _notifier.Verify(n => n.OrderCreatedAsync(
+                It.IsAny<OrderCreatedNotification>(), It.IsAny<CancellationToken>()), Times.Never);
+            _notifier.Verify(n => n.LowStockAsync(
+                It.IsAny<IReadOnlyList<LowStockNotification>>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
     }

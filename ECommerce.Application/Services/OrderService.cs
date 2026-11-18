@@ -1,6 +1,9 @@
-﻿using ECommerce.Application.Common.Exceptions;
+﻿using ECommerce.Application.Common.Constants;
+using ECommerce.Application.Common.Exceptions;
 using ECommerce.Application.Common.Models;
+using ECommerce.Application.DTOs.Notifications;
 using ECommerce.Application.DTOs.Orders;
+using ECommerce.Application.Interfaces;
 using ECommerce.Application.Interfaces.Repositories;
 using ECommerce.Application.Mappings;
 using ECommerce.Domain.Entities;
@@ -17,11 +20,13 @@ namespace ECommerce.Application.Services
     {
         private readonly IUnitOfWork _uow;
         private readonly ILogger<OrderService> _logger;
+        private readonly IAdminNotifier _notifier;
 
-        public OrderService(IUnitOfWork uow, ILogger<OrderService> logger)
+        public OrderService(IUnitOfWork uow, ILogger<OrderService> logger, IAdminNotifier notifier)
         {
             _uow = uow;
             _logger = logger;
+            _notifier = notifier;
         }
 
         // ================= Checkout =================
@@ -39,6 +44,7 @@ namespace ECommerce.Application.Services
                 ShippingAddress = dto.ShippingAddress.ToEntity()
             };
 
+            var affectedProducts = cart.Items.Select(i => i.Product).ToList();
             foreach (var item in cart.Items)
             {
                 var product = item.Product;
@@ -71,6 +77,23 @@ namespace ECommerce.Application.Services
                  "Order {OrderNumber} created for user {UserId}. Items: {ItemsCount}, Total: {TotalAmount}",
                    order.OrderNumber, userId, order.Items.Count, order.TotalAmount);
 
+
+            await _notifier.OrderCreatedAsync(new OrderCreatedNotification(
+    order.Id,
+    order.OrderNumber,
+    order.TotalAmount,
+    order.Items.Sum(i => i.Quantity),
+    order.CreatedAt));
+
+            var lowStock = affectedProducts
+                .Where(p => p.StockQuantity <= StockRules.LowStockThreshold)
+                .Select(p => new LowStockNotification(p.Id, p.Name, p.Sku, p.StockQuantity))
+                .ToList();
+
+            if (lowStock.Count > 0)
+                await _notifier.LowStockAsync(lowStock);
+
+            return order.ToDto();
             return order.ToDto();
         }
 

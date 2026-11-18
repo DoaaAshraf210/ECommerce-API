@@ -1,14 +1,18 @@
 
 using ECommerce.API.Filters;
 using ECommerce.API.Handlers;
+using ECommerce.API.Hubs;
 using ECommerce.Application;
  using ECommerce.Infrastructure;
 using ECommerce.Infrastructure.Identity;
 using ECommerce.Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using ECommerce.API.Hubs;
+using ECommerce.Application.Interfaces;
 using Serilog;
 using Serilog;
 using System.Text;
@@ -30,6 +34,16 @@ namespace ECommerce.API
             {
                 options.Filters.Add<ValidationFilter>();
             }).AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
+            builder.Services.Configure<ApiBehaviorOptions>(options =>
+            {
+                options.InvalidModelStateResponseFactory = context =>
+                    new BadRequestObjectResult(new ValidationProblemDetails(context.ModelState)
+                    {
+                        Status = StatusCodes.Status400BadRequest,
+                        Title = "Validation failed",
+                        Instance = context.HttpContext.Request.Path
+                    });
+            });
             builder.Services.AddApplication();
             builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -57,6 +71,24 @@ namespace ECommerce.API
                         RoleClaimType = "role",
                         NameClaimType = "name"
                     };
+
+
+
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            var accessToken = context.Request.Query["access_token"];
+
+                            if (!string.IsNullOrEmpty(accessToken)
+                                && context.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                            {
+                                context.Token = accessToken;
+                            }
+
+                            return Task.CompletedTask;
+                        }
+                    };
                 });
 
             builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -79,8 +111,9 @@ namespace ECommerce.API
                 {
                     [new OpenApiSecuritySchemeReference("Bearer", document)] = []
                 });
-            });          
-
+            });
+            builder.Services.AddSignalR(o => o.MaximumReceiveMessageSize = 4 * 1024);
+            builder.Services.AddSingleton<IAdminNotifier, SignalRAdminNotifier>();
             var app = builder.Build();
             if (!app.Environment.IsDevelopment()
               && string.IsNullOrWhiteSpace(app.Configuration["Email:Host"]))
@@ -125,6 +158,10 @@ namespace ECommerce.API
 
 
             app.MapControllers();
+            app.MapHub<AdminHub>("/hubs/admin", options =>
+            {
+                options.CloseOnAuthenticationExpiration = true;
+            });
 
             app.Run();
         }
