@@ -12,6 +12,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ECommerce.Infrastructure.Caching;
+using ECommerce.Infrastructure.Persistence;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -90,6 +93,13 @@ namespace ECommerce.Infrastructure
             services.AddScoped<IUserAdminService, UserAdminService>();
             services.Configure<StorageSettings>(configuration.GetSection("Storage"));
             services.AddSingleton<IFileStorage, LocalFileStorage>();
+            services.Configure<StorageSettings>(configuration.GetSection("Storage"));
+            services.AddSingleton<IFileStorage, LocalFileStorage>();
+
+            services.AddHealthChecks()
+                .AddDbContextCheck<ApplicationDbContext>("database", tags: new[] { "ready" })
+                .AddCheck<CacheHealthCheck>("cache", tags: new[] { "ready" });
+
             return services;
         }
     }
